@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC_Calc - Stacker Crane Cycle Time Calculator</title>
+<link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header__title">
+    <h1>SC_Calc</h1>
+    <p>Stacker Crane Cycle Time Calculator &mdash; 입고 / 출고 / Dual Cycle 시간 계산 (Local 실행, 서버 미사용)</p>
+  </div>
+</header>
+
+<nav class="sc-tabs" role="tablist" aria-label="SC_Calc 화면 전환">
+  <button type="button" class="sc-tab" id="tabBtn-cycle" role="tab" aria-selected="true" aria-controls="tabPanel-cycle" tabindex="0">Cycle Time</button>
+  <button type="button" class="sc-tab" id="tabBtn-travel" role="tab" aria-selected="false" aria-controls="tabPanel-travel" tabindex="-1">주행축</button>
+  <button type="button" class="sc-tab" id="tabBtn-lift" role="tab" aria-selected="false" aria-controls="tabPanel-lift" tabindex="-1">승강축</button>
+  <button type="button" class="sc-tab" id="tabBtn-fork" role="tab" aria-selected="false" aria-controls="tabPanel-fork" tabindex="-1">Fork축</button>
+  <button type="button" class="sc-tab" id="tabBtn-overview" role="tab" aria-selected="false" aria-controls="tabPanel-overview" tabindex="-1">전체 시각화</button>
+</nav>
+
+<div id="errorBox" class="error-box hidden">
+  <strong>입력값을 확인하세요:</strong>
+  <ul id="errorList"></ul>
+</div>
+
+<div id="statusBox" class="status-box hidden"></div>
+
+<div id="tabPanel-cycle" class="sc-tabpanel" role="tabpanel" aria-labelledby="tabBtn-cycle" tabindex="0">
+<main class="app-main">
+
+  <section class="panel input-panel">
+    <div class="panel-header">
+      <h2>입력</h2>
+      <div class="panel-header__actions">
+        <button id="btnCalculate" class="btn btn-primary">계산</button>
+        <button id="btnExportExcel" class="btn btn-secondary">Excel 저장</button>
+      </div>
+    </div>
+
+    <fieldset class="field-group">
+      <legend>기본 설정</legend>
+      <label class="field">
+        <span class="field__label">Cycle 유형</span>
+        <select id="cycleType">
+          <option value="입고">입고</option>
+          <option value="출고">출고</option>
+          <option value="Dual Cycle">Dual Cycle</option>
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">거리 계산 방식</span>
+        <select id="distanceMethod">
+          <option value="Rack Size">Rack Size 기준</option>
+          <option value="Bay/Level Pitch">Bay/Level Pitch 기준</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>장비 사양</legend>
+      <label class="field">
+        <span class="field__label">주행 최대 속도</span>
+        <input type="number" id="travelMaxSpeed" step="any"><span class="field__unit">mm/s</span>
+      </label>
+      <label class="field">
+        <span class="field__label">주행 가속도</span>
+        <input type="number" id="travelAccel" step="any"><span class="field__unit">mm/s&sup2;</span>
+      </label>
+      <label class="field">
+        <span class="field__label">주행 감속도</span>
+        <input type="number" id="travelDecel" step="any"><span class="field__unit">mm/s&sup2;</span>
+      </label>
+      <label class="field">
+        <span class="field__label">승강 최대 속도</span>
+        <input type="number" id="liftMaxSpeed" step="any"><span class="field__unit">mm/s</span>
+      </label>
+      <label class="field">
+        <span class="field__label">승강 가속도</span>
+        <input type="number" id="liftAccel" step="any"><span class="field__unit">mm/s&sup2;</span>
+      </label>
+      <label class="field">
+        <span class="field__label">승강 감속도</span>
+        <input type="number" id="liftDecel" step="any"><span class="field__unit">mm/s&sup2;</span>
+      </label>
+    </fieldset>
+
+    <fieldset id="rackSizeSection" class="field-group">
+      <legend>Rack Size 기준 위치</legend>
+      <label class="field">
+        <span class="field__label">Rack 주행 기준 길이</span>
+        <input type="number" id="rackTravelLength" step="any"><span class="field__unit">mm</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Rack 승강 기준 높이</span>
+        <input type="number" id="rackLiftHeight" step="any"><span class="field__unit">mm</span>
+      </label>
+
+      <div id="rsSingleBlock" class="sub-block">
+        <p class="field-note" id="rsSingleHint"></p>
+        <div class="field-xy"><span class="field__label">출발 위치 (주행%, 승강%)</span><input type="number" id="rs_startTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_startLiftPercent" step="any"><span class="field__unit">%</span></div>
+        <div class="field-xy"><span class="field__label">도착 위치 (주행%, 승강%)</span><input type="number" id="rs_endTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_endLiftPercent" step="any"><span class="field__unit">%</span></div>
+      </div>
+
+      <div id="rsDualBlock" class="sub-block">
+        <p class="field-note">1구간: 입고 Station(Loading Station)&rarr;입고 Rack(CELL 1), 2구간: 입고 Rack(CELL 1)&rarr;출고 Rack(CELL 2), 3구간: 출고 Rack(CELL 2)&rarr;출고 Station(UnLoading Station)</p>
+        <div class="field-xy"><span class="field__label">입고 Station 위치 (주행%, 승강%)</span><input type="number" id="rs_inStationTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_inStationLiftPercent" step="any"><span class="field__unit">%</span></div>
+        <div class="field-xy"><span class="field__label">입고 Rack 위치 (주행%, 승강%)</span><input type="number" id="rs_inRackTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_inRackLiftPercent" step="any"><span class="field__unit">%</span></div>
+        <div class="field-xy"><span class="field__label">출고 Rack 위치 (주행%, 승강%)</span><input type="number" id="rs_outRackTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_outRackLiftPercent" step="any"><span class="field__unit">%</span></div>
+        <div class="field-xy"><span class="field__label">출고 Station 위치 (주행%, 승강%)</span><input type="number" id="rs_outStationTravelPercent" step="any"><span class="field-xy__sep">,</span><input type="number" id="rs_outStationLiftPercent" step="any"><span class="field__unit">%</span></div>
+      </div>
+    </fieldset>
+
+    <fieldset id="bayLevelSection" class="field-group">
+      <legend>Bay/Level Pitch 기준 위치</legend>
+      <label class="field">
+        <span class="field__label">Rack Size (Bay Pitch)</span>
+        <input type="number" id="bayPitch" step="any"><span class="field__unit">mm</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Rack Size (Level Pitch)</span>
+        <input type="number" id="levelPitch" step="any"><span class="field__unit">mm</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Max Bay (Layout 최대)</span>
+        <input type="number" id="bl_maxBay" step="1">
+      </label>
+      <label class="field">
+        <span class="field__label">Max Level (Layout 최대)</span>
+        <input type="number" id="bl_maxLevel" step="1">
+      </label>
+      <p class="field-note">Max Bay/Max Level은 Layout 전체 크기(다이어그램 배치 기준)이며, Rack Size 기준의 Rack 주행 기준 길이/승강 기준 높이와 같은 역할입니다.</p>
+
+      <div id="blSingleBlock" class="sub-block">
+        <p class="field-note" id="blSingleHint"></p>
+        <div class="field-xy"><span class="field__label">출발 위치 (Bay, Level)</span><input type="number" id="bl_startBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_startLevel" step="1"></div>
+        <div class="field-xy"><span class="field__label">도착 위치 (Bay, Level)</span><input type="number" id="bl_endBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_endLevel" step="1"></div>
+      </div>
+
+      <div id="blDualBlock" class="sub-block">
+        <p class="field-note">1구간: 입고 Station(Loading Station)&rarr;입고 Rack(CELL 1), 2구간: 입고 Rack(CELL 1)&rarr;출고 Rack(CELL 2), 3구간: 출고 Rack(CELL 2)&rarr;출고 Station(UnLoading Station)</p>
+        <div class="field-xy"><span class="field__label">입고 Station 위치 (Bay, Level)</span><input type="number" id="bl_inStationBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_inStationLevel" step="1"></div>
+        <div class="field-xy"><span class="field__label">입고 Rack 위치 (Bay, Level)</span><input type="number" id="bl_inRackBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_inRackLevel" step="1"></div>
+        <div class="field-xy"><span class="field__label">출고 Rack 위치 (Bay, Level)</span><input type="number" id="bl_outRackBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_outRackLevel" step="1"></div>
+        <div class="field-xy"><span class="field__label">출고 Station 위치 (Bay, Level)</span><input type="number" id="bl_outStationBay" step="1"><span class="field-xy__sep">,</span><input type="number" id="bl_outStationLevel" step="1"></div>
+      </div>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>부가 시간 (1회 기준)</legend>
+      <label class="field"><span class="field__label">포크 인출 시간</span><input type="number" id="forkOutTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">포크 인입 시간</span><input type="number" id="forkInTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">Load 시간</span><input type="number" id="loadTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">Unload 시간</span><input type="number" id="unloadTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">위치 결정 시간</span><input type="number" id="positioningTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">통신/센서 확인 시간</span><input type="number" id="communicationTime" step="any"><span class="field__unit">sec/회</span></label>
+      <label class="field"><span class="field__label">여유 시간</span><input type="number" id="marginTime" step="any"><span class="field__unit">sec/Cycle</span></label>
+    </fieldset>
+
+    <fieldset class="field-group">
+      <legend>설정 관리</legend>
+      <div class="button-row">
+        <button id="btnSaveConfig" class="btn">설정 저장</button>
+        <button id="btnLoadConfig" class="btn">설정 불러오기</button>
+        <button id="btnResetConfig" class="btn btn-danger-outline">기본값 초기화</button>
+      </div>
+      <div class="button-row">
+        <button id="btnExportJSON" class="btn">설정 JSON 내보내기</button>
+        <button id="btnImportJSONTrigger" class="btn">설정 JSON 가져오기</button>
+        <input type="file" id="btnImportJSON" accept="application/json" class="hidden">
+      </div>
+    </fieldset>
+
+  </section>
+
+  <div class="right-column">
+
+  <section class="panel diagram-panel">
+    <h2>Layout 다이어그램</h2>
+    <svg id="layoutSvg" viewBox="0 0 900 330" class="layout-svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#d2691e"></path>
+        </marker>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#3a6ea5"></path>
+        </marker>
+      </defs>
+      <g id="layoutSvgG"></g>
+    </svg>
+  </section>
+
+  <section class="panel result-panel">
+    <h2>결과</h2>
+
+    <div class="summary-highlight">
+      <span class="summary-highlight__label">총 Cycle Time</span>
+      <span class="summary-highlight__value" id="totalCycleTimeValue">-</span>
+      <span class="summary-highlight__unit">sec</span>
+    </div>
+
+    <table class="result-table" id="summaryTable">
+      <tbody id="summaryTableBody">
+        <tr><td colspan="2" class="empty-row">계산 버튼을 눌러 결과를 확인하세요.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>구간별 Breakdown</h3>
+    <table class="result-table" id="segmentTable">
+      <thead>
+        <tr>
+          <th>구간</th><th>시작 위치</th><th>종료 위치</th>
+          <th>주행 거리[mm]</th><th>승강 거리[mm]</th>
+          <th>주행 시간[sec]</th><th>승강 시간[sec]</th><th>구간 이동 시간[sec]</th>
+        </tr>
+      </thead>
+      <tbody id="segmentTableBody">
+        <tr><td colspan="8" class="empty-row">계산 결과가 없습니다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  </div>
+
+</main>
+</div>
+
+<div id="tabPanel-travel" class="sc-tabpanel hidden" role="tabpanel" aria-labelledby="tabBtn-travel" tabindex="0">
+  <section class="panel axis-panel axis-panel--travel">
+    <h2>주행축 속도사양</h2>
+    <p class="field-note">Stacker Crane 주행축의 주행거리·목표최고속도·가감속도로 편도 운전 프로파일(사다리꼴/경계/삼각형)을 계산합니다. 계산만으로는 메인 Cycle Time이 바뀌지 않으며, 아래 "Cycle Time에 적용" 버튼을 눌러야 반영됩니다.</p>
+
+    <div class="axis-layout">
+      <div class="axis-input-col">
+        <fieldset class="field-group">
+          <legend>속도사양 입력</legend>
+          <label class="field"><span class="field__label">주행거리</span><input type="number" id="axis_travel_strokeMm" step="any"><span class="field__unit">mm</span></label>
+          <label class="field"><span class="field__label">목표 최고속도</span><input type="number" id="axis_travel_targetSpeedMPerMin" step="any"><span class="field__unit">m/min</span></label>
+          <div class="field-accel">
+            <div class="field-accel__label">가속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_travel_accelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_travel_accelerationSec" step="any"></label>
+            </div>
+          </div>
+          <div class="field-accel">
+            <div class="field-accel__label">감속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_travel_decelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_travel_decelerationSec" step="any"></label>
+            </div>
+          </div>
+          <p class="field-note">mm/s²·sec 중 하나를 입력하면 나머지 값이 자동으로 반영됩니다
+            (sec = 목표 최고속도까지 도달하는 시간 V/a로, 주행거리와는 무관합니다).</p>
+        </fieldset>
+        <div id="axis_travel_errors" class="error-box hidden"><strong>입력값을 확인하세요:</strong><ul></ul></div>
+        <div class="button-row">
+          <button type="button" class="btn btn-primary" id="axis_travel_btnCalc">축 계산</button>
+          <button type="button" class="btn" id="axis_travel_btnReset">현재 축 초기화</button>
+          <button type="button" class="btn btn-secondary" id="axis_travel_btnExportExcel">Excel 저장</button>
+        </div>
+      </div>
+
+      <div class="axis-result-col">
+        <div id="axis_travel_summary" class="axis-summary"></div>
+        <svg id="axis_travel_chart" class="axis-chart" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="주행축 속도-시간 그래프"></svg>
+        <table class="result-table" id="axis_travel_nodeTable">
+          <thead><tr><th>절점</th><th>시간[s]</th><th>속도[m/min]</th><th>누적거리[mm]</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>시간·거리 결과</h3>
+        <table class="result-table" id="axis_travel_detailTable"><tbody></tbody></table>
+      </div>
+    </div>
+
+    <div class="axis-apply-block">
+      <h3>기존 Cycle Time에 적용</h3>
+      <table class="result-table" id="axis_travel_compareTable">
+        <thead><tr><th>항목</th><th>기존값</th><th>계산값(적용 시)</th><th>차이</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button-row">
+        <button type="button" class="btn btn-secondary" id="axis_travel_btnApply">Cycle Time에 적용</button>
+        <span id="axis_travel_applyStatus" class="sc-badge sc-badge--muted">미적용</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tabPanel-lift" class="sc-tabpanel hidden" role="tabpanel" aria-labelledby="tabBtn-lift" tabindex="0">
+  <section class="panel axis-panel axis-panel--lift">
+    <h2>승강축 속도사양</h2>
+    <p class="field-note">Stacker Crane 승강축의 승강거리·목표최고속도·가감속도로 편도 운전 프로파일을 계산합니다. 1차 범위에서는 상승·하강에 동일한 속도사양을 사용합니다. 계산만으로는 메인 Cycle Time이 바뀌지 않으며, "Cycle Time에 적용"을 눌러야 반영됩니다.</p>
+
+    <div class="axis-layout">
+      <div class="axis-input-col">
+        <fieldset class="field-group">
+          <legend>속도사양 입력 (상승·하강 공통)</legend>
+          <label class="field"><span class="field__label">승강거리</span><input type="number" id="axis_lift_strokeMm" step="any"><span class="field__unit">mm</span></label>
+          <label class="field"><span class="field__label">목표 최고속도</span><input type="number" id="axis_lift_targetSpeedMPerMin" step="any"><span class="field__unit">m/min</span></label>
+          <div class="field-accel">
+            <div class="field-accel__label">가속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_lift_accelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_lift_accelerationSec" step="any"></label>
+            </div>
+          </div>
+          <div class="field-accel">
+            <div class="field-accel__label">감속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_lift_decelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_lift_decelerationSec" step="any"></label>
+            </div>
+          </div>
+          <p class="field-note">mm/s²·sec 중 하나를 입력하면 나머지 값이 자동으로 반영됩니다
+            (sec = 목표 최고속도까지 도달하는 시간 V/a로, 승강거리와는 무관합니다).</p>
+        </fieldset>
+        <div id="axis_lift_errors" class="error-box hidden"><strong>입력값을 확인하세요:</strong><ul></ul></div>
+        <div class="button-row">
+          <button type="button" class="btn btn-primary" id="axis_lift_btnCalc">축 계산</button>
+          <button type="button" class="btn" id="axis_lift_btnReset">현재 축 초기화</button>
+          <button type="button" class="btn btn-secondary" id="axis_lift_btnExportExcel">Excel 저장</button>
+        </div>
+      </div>
+
+      <div class="axis-result-col">
+        <div id="axis_lift_summary" class="axis-summary"></div>
+        <svg id="axis_lift_chart" class="axis-chart" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="승강축 속도-시간 그래프"></svg>
+        <table class="result-table" id="axis_lift_nodeTable">
+          <thead><tr><th>절점</th><th>시간[s]</th><th>속도[m/min]</th><th>누적거리[mm]</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>시간·거리 결과</h3>
+        <table class="result-table" id="axis_lift_detailTable"><tbody></tbody></table>
+      </div>
+    </div>
+
+    <div class="axis-apply-block">
+      <h3>기존 Cycle Time에 적용</h3>
+      <table class="result-table" id="axis_lift_compareTable">
+        <thead><tr><th>항목</th><th>기존값</th><th>계산값(적용 시)</th><th>차이</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button-row">
+        <button type="button" class="btn btn-secondary" id="axis_lift_btnApply">Cycle Time에 적용</button>
+        <span id="axis_lift_applyStatus" class="sc-badge sc-badge--muted">미적용</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tabPanel-fork" class="sc-tabpanel hidden" role="tabpanel" aria-labelledby="tabBtn-fork" tabindex="0">
+  <section class="panel axis-panel axis-panel--fork">
+    <h2>Fork축 속도사양</h2>
+    <p class="field-note">Fork 인출/인입 스트로크·목표최고속도·가감속도로 편도 운전 프로파일을 계산합니다. 1차 범위에서는 인출과 인입에 동일한 속도사양(선형 프로파일)을 사용하며, 구동 토크 계산은 포함하지 않습니다. 스트로크가 짧아 삼각형 프로파일(목표속도 도달 실패)이 나오기 쉬우니 "목표 최고속도"와 "실제 최고속도"를 구분해 확인하세요.</p>
+
+    <div class="axis-layout">
+      <div class="axis-input-col">
+        <fieldset class="field-group">
+          <legend>속도사양 입력 (인출·인입 공통)</legend>
+          <label class="field"><span class="field__label">스트로크</span><input type="number" id="axis_fork_strokeMm" step="any"><span class="field__unit">mm</span></label>
+          <label class="field"><span class="field__label">목표 최고속도</span><input type="number" id="axis_fork_targetSpeedMPerMin" step="any"><span class="field__unit">m/min</span></label>
+          <div class="field-accel">
+            <div class="field-accel__label">가속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_fork_accelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_fork_accelerationSec" step="any"></label>
+            </div>
+          </div>
+          <div class="field-accel">
+            <div class="field-accel__label">감속도</div>
+            <div class="field-accel__row">
+              <label class="field-accel__item"><span>mm/s&sup2;</span><input type="number" id="axis_fork_decelerationMmS2" step="any"></label>
+              <label class="field-accel__item"><span>sec</span><input type="number" id="axis_fork_decelerationSec" step="any"></label>
+            </div>
+          </div>
+          <p class="field-note">mm/s²·sec 중 하나를 입력하면 나머지 값이 자동으로 반영됩니다
+            (sec = 목표 최고속도까지 도달하는 시간 V/a로, 스트로크와는 무관합니다). 기존 프로젝트에는 Fork
+            스트로크·속도 사양이 없어 기본값은 프로젝트 가정값입니다(화면에 "가정값" 표시).</p>
+        </fieldset>
+        <div id="axis_fork_errors" class="error-box hidden"><strong>입력값을 확인하세요:</strong><ul></ul></div>
+        <div class="button-row">
+          <button type="button" class="btn btn-primary" id="axis_fork_btnCalc">축 계산</button>
+          <button type="button" class="btn" id="axis_fork_btnReset">현재 축 초기화</button>
+          <button type="button" class="btn btn-secondary" id="axis_fork_btnExportExcel">Excel 저장</button>
+        </div>
+      </div>
+
+      <div class="axis-result-col">
+        <div id="axis_fork_summary" class="axis-summary"></div>
+        <svg id="axis_fork_chart" class="axis-chart" viewBox="0 0 640 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Fork축 속도-시간 그래프"></svg>
+        <table class="result-table" id="axis_fork_nodeTable">
+          <thead><tr><th>절점</th><th>시간[s]</th><th>속도[m/min]</th><th>누적거리[mm]</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <h3>시간·거리 결과</h3>
+        <table class="result-table" id="axis_fork_detailTable"><tbody></tbody></table>
+      </div>
+    </div>
+
+    <div class="axis-apply-block">
+      <h3>기존 Cycle Time에 적용 (포크 인출/인입 시간)</h3>
+      <table class="result-table" id="axis_fork_compareTable">
+        <thead><tr><th>항목</th><th>기존값</th><th>계산값(적용 시)</th><th>차이</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button-row">
+        <button type="button" class="btn btn-secondary" id="axis_fork_btnApply">Cycle Time에 적용</button>
+        <span id="axis_fork_applyStatus" class="sc-badge sc-badge--muted">미적용</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tabPanel-overview" class="sc-tabpanel hidden" role="tabpanel" aria-labelledby="tabBtn-overview" tabindex="0">
+  <section class="panel">
+    <h2>전체 Stacker Crane 운전 시퀀스</h2>
+    <p class="field-note">현재 메인 Cycle Time 입력값 기준으로 주행·승강·Fork 세 축의 운전시간과 동시/순차 운전 구성을 비교합니다. "새로고침" 버튼으로 최신 입력값을 다시 반영할 수 있습니다.</p>
+    <div class="button-row">
+      <button type="button" class="btn" id="overview_btnRefresh">새로고침</button>
+    </div>
+
+    <div id="overview_cards" class="overview-cards"></div>
+
+    <h3>축별 비교</h3>
+    <table class="result-table" id="overview_axisTable">
+      <thead>
+        <tr><th>축</th><th>스트로크[mm]</th><th>목표속도[m/min]</th><th>실제 최고속도[m/min]</th><th>프로파일</th><th>운전시간[s]</th><th>적용 상태</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>전체 운전 타임라인</h3>
+    <p class="field-note" id="overview_timelineNote"></p>
+    <svg id="overview_timeline" class="timeline-svg" viewBox="0 0 900 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="전체 Cycle Time 타임라인"></svg>
+
+    <h3>Cycle Time 구성 상세</h3>
+    <table class="result-table" id="overview_stepsTable">
+      <thead>
+        <tr><th>순서</th><th>동작</th><th>사용 축</th><th>시작시간[s]</th><th>종료시간[s]</th><th>소요시간[s]</th><th>실행 방식</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</div>
+
+<footer class="app-footer">
+  <p><strong>주의사항:</strong> 본 프로그램의 계산 결과는 설계 검토용 예상값입니다. 장비 제조사 공식 사양값, 제어 시퀀스, 안전 인터록 조건, 사내 표준 계산식이 있는 경우 해당 기준이 우선합니다. Dual Cycle은 본 프로그램이 정의한 기본 시퀀스(입고 Station&rarr;입고 Rack&rarr;출고 Rack&rarr;출고 Station) 기준으로 계산되며, 실제 장비 시퀀스가 다르면 결과가 달라질 수 있습니다.</p>
+  <p><strong>로컬 저장 안내:</strong> 입력값은 이 브라우저의 LocalStorage(<code>SC_Calc:lastConfig:v1</code>)에만 저장되며 외부로 전송되지 않습니다. 다른 PC와 설정을 공유하려면 설정 JSON 내보내기/가져오기를 사용하세요.</p>
+  <p><strong>축별 속도사양 탭 안내:</strong> 이 프로그램은 Stacker Crane의 Cycle Time과 축별 속도 프로파일을 검토하기 위한 설계 보조 도구입니다. 계산 결과는 입력 조건과 등가속도(사다리꼴/삼각형) 모델을 기반으로 하며 실제 설비의 성능과 안전을 보증하지 않습니다. 실제 설계에서는 인버터 제어 특성, S-커브, 저크, 제어 지연, 기계 백래시, 진동, 휠 슬립, 하중 변화, 비상정지 및 관련 안전 규격을 별도로 검토해야 합니다. 본 기능은 모터·감속기·브레이크·회생장치의 선정 기능을 포함하지 않습니다. "축별 편도 운전시간"과 "전체 Stacker Crane Cycle Time"은 서로 다른 값이니 혼동하지 마십시오.</p>
+</footer>
+
+<script src="./vendor/xlsx.full.min.js"></script>
+<script src="./vendor/jszip.min.js"></script>
+<script src="./assets/js/default-config.js"></script>
+<script src="./assets/js/calculator.js"></script>
+<script src="./assets/js/axis-profile.js"></script>
+<script src="./assets/js/storage.js"></script>
+<script src="./assets/js/excel-save.js"></script>
+<script src="./assets/js/excel-chart-injector.js"></script>
+<script src="./assets/js/excel-layout-chart.js"></script>
+<script src="./assets/js/excel-axis-chart.js"></script>
+<script src="./assets/js/excel-exporter.js"></script>
+<script src="./assets/js/ui.js"></script>
+<script src="./assets/js/axis-ui.js"></script>
+<script src="./assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "cycleType": "Dual Cycle",
+  "distanceMethod": "Bay/Level Pitch",
+  "equipment": {
+    "travelMaxSpeed": 1500,
+    "travelAccel": 500,
+    "travelDecel": 500,
+    "liftMaxSpeed": 800,
+    "liftAccel": 300,
+    "liftDecel": 300
+  },
+  "rackSize": {
+    "rackTravelLength": 51000,
+    "rackLiftHeight": 15000,
+    "single": {
+      "startTravelPercent": 0,
+      "startLiftPercent": 0,
+      "endTravelPercent": 80,
+      "endLiftPercent": 80
+    },
+    "dual": {
+      "inStationTravelPercent": 0,
+      "inStationLiftPercent": 0,
+      "inRackTravelPercent": 80,
+      "inRackLiftPercent": 80,
+      "outRackTravelPercent": 40,
+      "outRackLiftPercent": 60,
+      "outStationTravelPercent": 100,
+      "outStationLiftPercent": 0
+    }
+  },
+  "bayLevel": {
+    "bayPitch": 1020,
+    "levelPitch": 3000,
+    "maxBay": 50,
+    "maxLevel": 5,
+    "single": {
+      "startBay": 0,
+      "startLevel": 0,
+      "endBay": 40,
+      "endLevel": 4
+    },
+    "dual": {
+      "inStationBay": 0,
+      "inStationLevel": 0,
+      "inRackBay": 40,
+      "inRackLevel": 4,
+      "outRackBay": 20,
+      "outRackLevel": 3,
+      "outStationBay": 50,
+      "outStationLevel": 0
+    }
+  },
+  "additionalTime": {
+    "forkOutTime": 2,
+    "forkInTime": 2,
+    "loadTime": 3,
+    "unloadTime": 3,
+    "positioningTime": 1,
+    "communicationTime": 1,
+    "marginTime": 2
+  }
+}

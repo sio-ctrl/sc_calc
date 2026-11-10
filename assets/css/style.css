@@ -1,0 +1,432 @@
+:root {
+  --color-bg: #f4f5f7;
+  --color-panel: #ffffff;
+  --color-border: #d9dce1;
+  --color-text: #1f2430;
+  --color-muted: #6b7280;
+  --color-primary: #1f5fb0;
+  --color-primary-dark: #164a8a;
+  --color-danger: #b0301f;
+  --color-error-bg: #fdecea;
+  --color-status-bg: #e9f5ec;
+  --color-status-text: #1e6b3a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  min-width: 1280px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Segoe UI", "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+.hidden { display: none !important; }
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 24px;
+}
+
+.app-header__title h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.app-header__title p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-header__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  background: #f8f9fb;
+  color: var(--color-text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn:hover { background: #edf0f4; }
+
+.btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-primary:hover { background: var(--color-primary-dark); }
+
+.btn-secondary {
+  background: #fff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.btn-danger-outline {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.error-box {
+  margin: 12px 24px 0;
+  padding: 12px 16px;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 4px;
+}
+.error-box ul { margin: 4px 0 0 18px; padding: 0; }
+
+.status-box {
+  margin: 12px 24px 0;
+  padding: 10px 16px;
+  background: var(--color-status-bg);
+  border: 1px solid #2f9e52;
+  color: var(--color-status-text);
+  border-radius: 4px;
+}
+.status-box--error {
+  background: var(--color-error-bg);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.layout-svg {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  display: block;
+  margin: 8px 0 4px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.app-main {
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  align-items: flex-start;
+}
+
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+.input-panel { flex: 1 1 480px; max-width: 560px; }
+
+.right-column {
+  flex: 1 1 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.diagram-panel, .result-panel { width: 100%; }
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 16px;
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 8px;
+}
+
+.panel h3 {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+
+.field-group {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  margin: 0 0 14px;
+  padding: 10px 14px 14px;
+}
+
+.field-group legend {
+  padding: 0 6px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  font-size: 13px;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 1fr 110px 40px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.field__label {
+  color: var(--color-text);
+}
+
+.field input, .field select, .field-xy input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.field select { grid-column: 2 / span 2; }
+
+/* 주행 위치/승강 위치를 (x, y) 한 줄로 함께 입력하는 필드 */
+.field-xy {
+  display: grid;
+  grid-template-columns: 1fr 55px 10px 55px 20px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.field-xy__sep {
+  text-align: center;
+  color: var(--color-muted);
+}
+
+/* 가속도/감속도를 mm/s²·sec 두 가지 단위로 동시에 입력/표시하는 필드 (서로 자동 반영) */
+.field-accel {
+  margin-bottom: 10px;
+}
+.field-accel__label {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.field-accel__row {
+  display: flex;
+  gap: 6px;
+}
+.field-accel__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.field-accel__item span {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+.field-accel__item input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.field__unit {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.field-note {
+  grid-column: 1 / -1;
+  color: var(--color-muted);
+  font-size: 12px;
+  margin: 2px 0 8px;
+}
+
+.sub-block { border-top: 1px dashed var(--color-border); padding-top: 8px; margin-top: 4px; }
+
+.summary-highlight {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: #eef4fc;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+
+.summary-highlight__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.summary-highlight__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.summary-highlight__unit {
+  color: var(--color-muted);
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.result-table th, .result-table td {
+  border: 1px solid var(--color-border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.result-table th {
+  background: #f1f3f6;
+  font-weight: 600;
+}
+
+.result-table td:last-child, .result-table th:nth-child(n+4) {
+  text-align: right;
+}
+
+.empty-row {
+  text-align: center !important;
+  color: var(--color-muted);
+}
+
+.app-footer {
+  padding: 12px 24px 24px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ---- 축별 속도사양 탭 (Cycle Time 탭과 별도 신규 클래스, 접두사 sc-/axis-/overview-) ---- */
+
+.sc-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  background: var(--color-panel);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+
+.sc-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sc-tab:hover { color: var(--color-text); }
+.sc-tab[aria-selected="true"] {
+  color: var(--color-primary-dark);
+  border-bottom-color: var(--color-primary);
+}
+.sc-tab:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.sc-tabpanel { padding: 16px 24px; }
+
+.axis-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.axis-input-col { flex: 0 0 320px; }
+.axis-result-col { flex: 1 1 480px; min-width: 0; }
+
+.axis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.axis-summary__item {
+  background: #f1f3f6;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  min-width: 130px;
+}
+.axis-summary__label { display: block; font-size: 11px; color: var(--color-muted); }
+.axis-summary__value { display: block; font-size: 16px; font-weight: 700; color: var(--color-text); }
+
+.axis-chart, .timeline-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.axis-apply-block {
+  margin-top: 16px;
+  border-top: 1px dashed var(--color-border);
+  padding-top: 12px;
+}
+
+.sc-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sc-badge--muted { background: #eceff2; color: var(--color-muted); }
+.sc-badge--applied { background: var(--color-status-bg); color: var(--color-status-text); }
+.sc-badge--stale { background: #fff4e0; color: #8a5a00; }
+.sc-badge--error { background: var(--color-error-bg); color: var(--color-danger); }
+
+.overview-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+.overview-card {
+  flex: 1 1 150px;
+  background: #f8f9fb;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.overview-card__label { display: block; font-size: 11px; color: var(--color-muted); }
+.overview-card__value { display: block; font-size: 18px; font-weight: 700; }
+
+@media print {
+  .sc-tabs, .panel-header__actions, .button-row, .btn { display: none !important; }
+  .sc-tabpanel.hidden { display: block !important; }
+}
